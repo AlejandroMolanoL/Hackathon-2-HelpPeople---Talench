@@ -267,5 +267,3 @@ npm run dev
 ```
 
 Accede desde tu navegador a `http://localhost:5173`.
-#   H a c k a t h o n - 2 - H e l p P e o p l e - - - T a l e n c h  
- 
