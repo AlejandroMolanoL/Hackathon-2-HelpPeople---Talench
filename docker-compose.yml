@@ -1,0 +1,79 @@
+services:
+  # ========================================================
+  # 1. Base de Datos: Microsoft SQL Server 2022
+  # ========================================================
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: helppeople-sqlserver
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "HelpPeople*2024Secure"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    networks:
+      - helppeople-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'HelpPeople*2024Secure' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ========================================================
+  # 2. Backend: API FastAPI + Modelos de Machine Learning
+  # ========================================================
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: helppeople-backend
+    restart: unless-stopped
+    environment:
+      DB_SERVER: "sqlserver,1433"
+      DB_NAME: "HelpPeopleDB"
+      DB_USER: "sa"
+      DB_PASSWORD: "HelpPeople*2024Secure"
+      DB_DRIVER: "ODBC Driver 18 for SQL Server"
+      DB_TRUSTED_CONNECTION: "no"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+    ports:
+      - "8000:8000"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    networks:
+      - helppeople-net
+
+  # ========================================================
+  # 3. Frontend: React.js + Tailwind CSS + Servidor Nginx
+  # ========================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE: ""
+    container_name: helppeople-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - helppeople-net
+
+volumes:
+  mssql_data:
+    driver: local
+
+networks:
+  helppeople-net:
+    driver: bridge
+

@@ -1,0 +1,11 @@
+node_modules
+dist
+backend/venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.git
+.vscode
+.env
+backend/helppeople_local.db
+
